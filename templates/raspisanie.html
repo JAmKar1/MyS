@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расписание | Техникум</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-blue: #4a6fa5;
+            --secondary-blue: #3a5885;
+            --accent-teal: #4d8b8b;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--dark-text);
+            padding-top: 70px;
+        }
+
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .course-btn {
+            padding: 10px 20px;
+            background: rgba(74, 111, 165, 0.1);
+            border: 2px solid rgba(74, 111, 165, 0.2);
+            border-radius: 20px;
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .course-btn:hover, .course-btn.active {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .day-tab {
+            padding: 10px 20px;
+            background: rgba(74, 111, 165, 0.1);
+            border: 2px solid rgba(74, 111, 165, 0.2);
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 5px;
+            display: inline-block;
+        }
+
+        .day-tab:hover, .day-tab.active {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .day-schedule {
+            display: none;
+        }
+
+        .day-schedule.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .lesson-row:hover {
+            background-color: rgba(74, 111, 165, 0.05);
+        }
+
+        .upload-form {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .group-search {
+            position: relative;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0 0 10px 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-result-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #adb5bd;
+        }
+
+        .pdf-preview {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .pdf-preview-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pdf-preview-body {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .pdf-icon {
+            font-size: 64px;
+            color: #dc3545;
+            margin-bottom: 15px;
+        }
+
+        .pdf-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .upload-date {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация (как в исходном коде) -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}">
+                <i class="bi bi-building me-2"></i>Техникум
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">
+                            <i class="bi bi-house-door me-1"></i>Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('raspisanie') }}">
+                            <i class="bi bi-calendar-week me-1"></i>Расписание
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('repetitorstvo') }}">
+                            <i class="bi bi-book me-1"></i>Репетиторство
+                        </a>
+                    </li>
+                    {% if session.user_type == 'starosta' or session.user_type == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('starosta') }}">
+                            <i class="bi bi-star me-1"></i>Староста
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if session.user_type == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_schedule') }}">
+                            <i class="bi bi-gear me-1"></i>Управление расписанием
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar me-2" style="width: 35px; height: 35px; background: linear-gradient(135deg, #4a6fa5, #3a5885); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                                {{ session.name[0] if session.name else '?' }}
+                            </div>
+                            <span>{{ session.name }}</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-person me-2"></i>Мой профиль</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('my_tutoring') }}"><i class="bi bi-book me-2"></i>Мои репетиторства</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Выйти</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <div class="container mt-4">
+        <!-- Флэш-сообщения -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                        {{ message|safe }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Заголовок -->
+        <div class="content-card">
+            <h1 class="mb-3"><i class="bi bi-calendar-week text-primary"></i> Расписание занятий</h1>
+            <p class="text-muted">Просмотр расписания для всех групп техникума</p>
+        </div>
+
+        <!-- Загрузка расписания (только для админа) -->
+        {% if session.user_type == 'admin' %}
+        <div class="content-card">
+            <h4><i class="bi bi-cloud-upload text-primary"></i> Загрузить расписание (PDF)</h4>
+            <form action="{{ url_for('upload_schedule') }}" method="POST" enctype="multipart/form-data" class="upload-form">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="group_name" class="form-label">Группа</label>
+                        <input type="text" class="form-control" id="group_name" name="group_name"
+                               placeholder="Введите название группы" required>
+                        <small class="form-text text-muted">Например: ИСП-101, ПИ-21</small>
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <label for="schedule_file" class="form-label">PDF файл расписания</label>
+                        <input type="file" class="form-control" name="schedule_file" accept=".pdf" required>
+                        <small class="form-text text-muted">Загрузите PDF файл с расписанием</small>
+                    </div>
+                    <div class="col-md-3 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-upload me-2"></i>Загрузить
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- Поиск группы -->
+        <div class="content-card">
+            <h4><i class="bi bi-search text-primary"></i> Поиск группы</h4>
+            <div class="group-search mb-4">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text"><i class="bi bi-people"></i></span>
+                    <input type="text" class="form-control" id="groupSearch"
+                           placeholder="Введите название группы (например: ИСП-101, ПИ-21)"
+                           value="{{ selected_group }}">
+                    <button class="btn btn-primary" onclick="loadSelectedGroup()">
+                        <i class="bi bi-arrow-right"></i> Показать
+                    </button>
+                </div>
+                <div class="search-results" id="searchResults"></div>
+            </div>
+
+            <!-- Популярные группы -->
+            {% if groups %}
+            <h5 class="mb-3">Доступные группы:</h5>
+            <div class="d-flex flex-wrap">
+                {% for group in groups[:12] %}
+                <a href="/raspisanie?group={{ group }}" class="course-btn {% if selected_group == group %}active{% endif %}">
+                    {{ group }}
+                </a>
+                {% endfor %}
+                {% if groups|length > 12 %}
+                <span class="course-btn">+{{ groups|length - 12 }} еще</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Расписание -->
+        {% if selected_group %}
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4><i class="bi bi-calendar3 text-primary"></i> Расписание группы <strong>{{ selected_group }}</strong></h4>
+                <span class="badge bg-primary fs-6">Курс: {{ current_course }}</span>
+            </div>
+
+            {% if pdf_schedule %}
+            <!-- Отображение PDF расписания -->
+            <div class="pdf-preview">
+                <div class="pdf-preview-header">
+                    <div>
+                        <h5 class="mb-1"><i class="bi bi-file-pdf text-danger"></i> {{ pdf_schedule.original_filename }}</h5>
+                        <div class="upload-date">
+                            <i class="bi bi-calendar"></i> Загружено: {{ pdf_schedule.upload_date }}
+                            {% if pdf_schedule.uploaded_by_name %}
+                            | <i class="bi bi-person"></i> {{ pdf_schedule.uploaded_by_name }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="pdf-actions">
+                        <a href="{{ url_for('view_schedule', group_name=selected_group) }}"
+                           class="btn btn-outline-primary" target="_blank">
+                            <i class="bi bi-eye"></i> Просмотреть
+                        </a>
+                        <a href="{{ url_for('download_schedule', group_name=selected_group) }}"
+                           class="btn btn-primary">
+                            <i class="bi bi-download"></i> Скачать
+                        </a>
+                    </div>
+                </div>
+                <div class="pdf-preview-body">
+                    <div class="pdf-icon">
+                        <i class="bi bi-file-pdf"></i>
+                    </div>
+                    <p class="lead">Расписание доступно в PDF формате</p>
+                    <p>Нажмите "Просмотреть" для открытия в браузере или "Скачать" для сохранения файла</p>
+                </div>
+            </div>
+            {% else %}
+            <!-- Пустое состояние -->
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-calendar-x"></i>
+                </div>
+                <h4>Расписание не загружено</h4>
+                <p class="mb-3">Для группы {{ selected_group }} пока нет расписания</p>
+                {% if session.user_type == 'admin' %}
+                <a href="{{ url_for('admin_schedule') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Добавить расписание
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% else %}
+        <!-- Состояние без выбранной группы -->
+        <div class="content-card">
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h4>Выберите группу</h4>
+                <p class="mb-3">Введите название группы в поле поиска или выберите из списка</p>
+                <div class="text-muted small">
+                    <i class="bi bi-info-circle"></i> Примеры названий групп: ИСП-101, ПИ-21, КН-301
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Поиск групп
+        let searchTimeout;
+        document.getElementById('groupSearch').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+
+            if (query.length < 2) {
+                document.getElementById('searchResults').style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch(`/api/search_group?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(groups => {
+                        const resultsContainer = document.getElementById('searchResults');
+                        resultsContainer.innerHTML = '';
+
+                        if (groups.length === 0) {
+                            resultsContainer.innerHTML = '<div class="search-result-item text-muted">Группы не найдены</div>';
+                        } else {
+                            groups.forEach(group => {
+                                const item = document.createElement('div');
+                                item.className = 'search-result-item';
+                                item.textContent = group;
+                                item.onclick = () => {
+                                    document.getElementById('groupSearch').value = group;
+                                    resultsContainer.style.display = 'none';
+                                    loadSelectedGroup();
+                                };
+                                resultsContainer.appendChild(item);
+                            });
+                        }
+
+                        resultsContainer.style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Ошибка поиска:', error);
+                    });
+            }, 300);
+        });
+
+        // Загрузка выбранной группы
+        function loadSelectedGroup() {
+            const groupName = document.getElementById('groupSearch').value.trim();
+            if (groupName) {
+                window.location.href = `/raspisanie?group=${encodeURIComponent(groupName)}`;
+            }
+        }
+
+        // Автозаполнение при нажатии Enter
+        document.getElementById('groupSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadSelectedGroup();
+            }
+        });
+
+        // Скрываем результаты поиска при клике вне поля
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.group-search')) {
+                document.getElementById('searchResults').style.display = 'none';
+            }
+        });
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Если есть выбранная группа, фокусируемся на поле поиска
+            const selectedGroup = "{{ selected_group }}";
+            if (selectedGroup) {
+                document.getElementById('groupSearch').value = selectedGroup;
+            }
+        });
+    </script>
+</body>
+</html>
